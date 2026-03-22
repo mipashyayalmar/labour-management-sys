@@ -1,0 +1,627 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{% trans 'en' %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>{% block title %}चौगुले फार्म - मजुरी व्यवस्थापन{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --saffron: #E8621A;
+            --saffron-light: #F4874B;
+            --saffron-dark: #C04E0E;
+            --earth: #7A3B1E;
+            --gold: #F0A500;
+            --cream: #FDF6EC;
+            --green: #2E7D32;
+            --green-light: #4CAF50;
+            --red: #C62828;
+            --ink: #1A1008;
+            --muted: #7D6A58;
+            --border: #E8D9C8;
+            --white: #FFFFFF;
+            --card-bg: #FFFDF9;
+            --shadow: 0 2px 12px rgba(232,98,26,0.10);
+            --shadow-lg: 0 8px 32px rgba(232,98,26,0.15);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+        
+        /* Navigation */
+        nav {
+            background: var(--saffron);
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+        
+        .nav-brand {
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--white);
+            padding: 0.6rem 0;
+            letter-spacing: 0.5px;
+        }
+        
+        .nav-brand span { color: var(--gold); }
+        .nav-brand small { font-size: 0.8rem; display: block; color: rgba(255,255,255,0.8); }
+        
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-links a {
+            color: rgba(255,255,255,0.82);
+            text-decoration: none;
+            font-family: 'Baloo 2', cursive;
+            font-weight: 600;
+            font-size: 0.92rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s;
+            border-radius: 8px;
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--white);
+            background: rgba(255,255,255,0.10);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .user-name {
+            color: var(--white);
+            font-weight: 500;
+        }
+        
+        .lang-switcher {
+            display: flex;
+            gap: 0.3rem;
+        }
+        
+        .lang-btn {
+            background: rgba(255,255,255,0.15);
+            color: var(--white);
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .lang-btn.active {
+            background: var(--gold);
+            color: var(--ink);
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.15);
+            color: var(--white);
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Baloo 2', cursive;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.2rem 1rem 3rem;
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 1.3rem 1.2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.2rem;
+        }
+        
+        .section-title {
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--saffron-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--saffron-light), transparent);
+            margin-left: 0.5rem;
+        }
+        
+        /* Toast Messages */
+        .toast-container {
+            position: fixed;
+            bottom: 1.2rem;
+            right: 1.2rem;
+            z-index: 999;
+        }
+        
+        .toast-msg {
+            background: var(--green);
+            color: var(--white);
+            border-radius: 10px;
+            padding: 0.7rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.28s;
+            margin-top: 0.5rem;
+        }
+        
+        .toast-msg.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast-msg.error {
+            background: var(--red);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.3rem;
+            border-radius: 8px;
+            font-family: 'Baloo 2', cursive;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.18s;
+            text-decoration: none;
+        }
+        
+        .btn:active { transform: scale(0.97); }
+        
+        .btn-primary {
+            background: var(--saffron);
+            color: var(--white);
+            box-shadow: 0 2px 8px rgba(232,98,26,0.22);
+        }
+        
+        .btn-primary:hover {
+            background: var(--saffron-dark);
+            color: var(--white);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--saffron);
+            color: var(--saffron);
+        }
+        
+        .btn-outline:hover {
+            background: var(--saffron);
+            color: var(--white);
+        }
+        
+        .btn-danger {
+            background: var(--red);
+            color: var(--white);
+        }
+        
+        .btn-success {
+            background: var(--green);
+            color: var(--white);
+        }
+        
+        .btn-sm {
+            padding: 0.3rem 0.7rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Form Elements */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        
+        .form-control {
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.55rem 0.75rem;
+            font-family: 'Noto Sans', sans-serif;
+            font-size: 0.97rem;
+            color: var(--ink);
+            background: var(--white);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        
+        .form-control:focus {
+            border-color: var(--saffron);
+            box-shadow: 0 0 0 3px rgba(232,98,26,0.12);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.85rem;
+            margin-bottom: 1.2rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-card .stat-icon {
+            font-size: 1.6rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-card .stat-label {
+            font-size: 0.73rem;
+            color: var(--muted);
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+        
+        .stat-card .stat-value {
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--saffron-dark);
+            line-height: 1.1;
+        }
+        
+        /* Table */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        
+        thead {
+            background: var(--saffron);
+            color: var(--white);
+        }
+        
+        thead th {
+            padding: 0.7rem 0.75rem;
+            text-align: left;
+            font-family: 'Baloo 2', cursive;
+            font-weight: 700;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+        
+        tbody tr:hover {
+            background: #FFF3E8;
+        }
+        
+        tbody td {
+            padding: 0.62rem 0.75rem;
+            vertical-align: middle;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.18rem 0.55rem;
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            background: #FFF3E8;
+            color: var(--saffron-dark);
+            border: 1px solid var(--border);
+        }
+        
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+        }
+        
+        .filter-bar input, .filter-bar select {
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            font-size: 0.9rem;
+            background: var(--white);
+            outline: none;
+            flex: 1 1 140px;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26,16,8,0.55);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .modal-overlay.open {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-title {
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--saffron-dark);
+            margin-bottom: 1rem;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2.5rem 1rem;
+            color: var(--muted);
+        }
+        
+        .empty-state .icon {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                padding: 0.5rem;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: center;
+                margin-top: 0.5rem;
+            }
+            
+            .user-menu {
+                width: 100%;
+                justify-content: center;
+                margin-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            thead th:nth-child(4), thead th:nth-child(5),
+            tbody td:nth-child(4), tbody td:nth-child(5) {
+                display: none;
+            }
+        }
+        
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.85rem;
+        }
+        
+        .total-preview {
+            background: linear-gradient(135deg, var(--saffron), var(--saffron-dark));
+            color: var(--white);
+            border-radius: 10px;
+            padding: 0.9rem 1.1rem;
+            text-align: center;
+        }
+        
+        .total-preview .label {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            font-weight: 600;
+        }
+        
+        .total-preview .amount {
+            font-family: 'Baloo 2', cursive;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        .report-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .report-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: 0.92rem;
+        }
+        
+        .report-total {
+            background: linear-gradient(135deg, #FFF3E8, #FFECD5);
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            color: var(--saffron-dark);
+            margin-top: 0.4rem;
+            font-family: 'Baloo 2', cursive;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <nav>
+        <div class="nav-brand">
+            🌾 <span>चौगुले फार्म</span><br>
+            <small>Chaugule Farm</small>
+        </div>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i> {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'add_entry' %}" class="{% if request.resolver_match.url_name == 'add_entry' %}active{% endif %}">
+                <i class="fas fa-plus-circle"></i> {% trans "Add Entry" %}
+            </a>
+            <a href="{% url 'list_entries' %}" class="{% if request.resolver_match.url_name == 'list_entries' %}active{% endif %}">
+                <i class="fas fa-list"></i> {% trans "Records" %}
+            </a>
+            <a href="{% url 'reports' %}" class="{% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i> {% trans "Reports" %}
+            </a>
+        </div>
+        <div class="user-menu">
+<div class="lang-switcher">
+    <form method="post" action="{% url 'set_language' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" name="language" value="mr" class="lang-btn">🇮🇳 मराठी</button>
+        <button type="submit" name="language" value="en" class="lang-btn">🇬🇧 English</button>
+    </form>
+</div>
+            <span class="user-name"><i class="fas fa-user"></i> {{ user.username }}</span>
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn"><i class="fas fa-sign-out-alt"></i> {% trans "Logout" %}</button>
+            </form>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <div class="main-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert" style="background: var(--saffron-light); color: white; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </div>
+    
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg' + (isError ? ' error' : '');
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        function formatNumber(n) {
+            return Number(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '–';
+            const [y, m, d] = dateStr.split('-');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${d} ${months[parseInt(m)-1]} ${y}`;
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

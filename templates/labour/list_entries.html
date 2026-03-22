@@ -1,0 +1,312 @@
+{% extends 'labour/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Records" %} - {% trans "Chaugule Farm" %}{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <i class="fas fa-list"></i> {% trans "All Records" %}
+</div>
+
+<div class="card" style="padding: 0.85rem 1rem;">
+    <div class="filter-bar">
+        <input type="text" id="search-text" placeholder="🔍 {% trans 'Search name / crop / owner…' %}" value="{{ search_query }}">
+        <input type="date" id="filter-date" placeholder="{% trans 'Date' %}" value="{{ filter_date }}">
+        <input type="text" id="filter-pargi" placeholder="{% trans 'Pargi' %}" value="{{ filter_pargi }}">
+        <input type="text" id="filter-owner" placeholder="{% trans 'Owner' %}" value="{{ filter_owner }}">
+        <input type="text" id="filter-crop" placeholder="{% trans 'Crop' %}" value="{{ filter_crop }}">
+        <button class="btn btn-outline btn-sm" onclick="clearFilters()">✕ {% trans "Clear" %}</button>
+    </div>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>{% trans "Date" %}</th>
+                    <th>{% trans "Day" %}</th>
+                    <th>{% trans "In Time" %}</th>
+                    <th>{% trans "Out Time" %}</th>
+                    <th>{% trans "Pargi" %}</th>
+                    <th>{% trans "Labour" %}</th>
+                    <th>{% trans "Qty" %}</th>
+                    <th>{% trans "Rate" %}</th>
+                    <th>{% trans "Total" %}</th>
+                    <th>{% trans "Crop" %}</th>
+                    <th>{% trans "Owner" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody id="records-body">
+                {% for entry in entries %}
+                <tr data-id="{{ entry.id }}" style="background-color: {{ entry.date|date:'w'|add:'0'|default:'#FFFFFF' }}20;">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ entry.date|date:"d/m/Y" }}</td>
+                    <td>{{ entry.day }}<br><small>{{ entry.day_marathi }}</small></td>
+                    <td>{{ entry.in_time|time:"H:i" }}</td>
+                    <td>{{ entry.out_time|time:"H:i"|default:'-' }}</td>
+                    <td>{{ entry.pargi_name }}</td>
+                    <td>{{ entry.labour_name }}</td>
+                    <td>{{ entry.quantity }}</td>
+                    <td>₹{{ entry.rupees_per_head }}</td>
+                    <td style="font-weight: 700; color: var(--saffron-dark);">₹{{ entry.total_amount|floatformat:2 }}</td>
+                    <td>{{ entry.land_crop_name|default:'–' }}</td>
+                    <td>{{ entry.owner_name|default:'–' }}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="openEditModal({{ entry.id }})">
+                            <i class="fas fa-edit"></i> ✏️
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteEntry({{ entry.id }})">
+                            <i class="fas fa-trash"></i> 🗑️
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="13" style="text-align: center; padding: 2rem;">
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <p>{% trans "No entries found." %}</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if entries %}
+            <tfoot>
+                <tr>
+                    <td colspan="9" style="text-align: right; font-weight: 700;">{% trans "Grand Total" %}:</td>
+                    <td style="font-weight: 700; color: var(--saffron-dark);">₹{{ total_sum|floatformat:2 }}</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-title">✏️ {% trans "Edit Entry" %}</div>
+        <div class="form-grid" id="editFormGrid"></div>
+        <div class="form-actions" style="margin-top: 1rem;">
+            <button class="btn btn-outline" onclick="closeModal()">
+                <i class="fas fa-times"></i> {% trans "Cancel" %}
+            </button>
+            <button class="btn btn-primary" onclick="saveEdit()">
+                <i class="fas fa-save"></i> {% trans "Save Changes" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let editId = null;
+let entriesData = {{ entries_json|safe }};
+
+function getEntryById(id) {
+    return entriesData.find(e => e.id === id);
+}
+
+function openEditModal(id) {
+    const entry = getEntryById(id);
+    if (!entry) return;
+    editId = id;
+    
+    const fields = [
+        {id: 'e-date', label: '📅 Date', type: 'date', val: entry.date},
+        {id: 'e-in-time', label: '⏰ In Time', type: 'time', val: entry.in_time},
+        {id: 'e-out-time', label: '⏰ Out Time', type: 'time', val: entry.out_time},
+        {id: 'e-pargi', label: '👥 Pargi Name', type: 'text', val: entry.pargi_name},
+        {id: 'e-name', label: '👷 Labour Name', type: 'text', val: entry.labour_name},
+        {id: 'e-qty', label: '🔢 Quantity', type: 'number', val: entry.quantity},
+        {id: 'e-rate', label: '💵 Rate per Head', type: 'number', val: entry.rupees_per_head},
+        {id: 'e-crop', label: '🌾 Crop', type: 'text', val: entry.land_crop_name},
+        {id: 'e-owner', label: '👤 Owner', type: 'text', val: entry.owner_name},
+        {id: 'e-notes', label: '📝 Notes', type: 'text', val: entry.notes},
+    ];
+    
+    document.getElementById('editFormGrid').innerHTML = fields.map(f => `
+        <div class="form-group">
+            <label>${f.label}</label>
+            <input type="${f.type}" id="${f.id}" class="form-control" value="${f.val || ''}" ${f.type === 'number' ? 'min="0"' : ''}>
+        </div>
+    `).join('');
+    
+    // Add total preview
+    const totalPreview = `
+        <div class="form-group" style="grid-column: 1 / -1;">
+            <label>💰 Total Amount</label>
+            <div class="total-preview" style="padding: 0.5rem;">
+                <div class="label">AUTO CALCULATED</div>
+                <div class="amount" id="edit-total-display">₹${formatNumber(entry.total_amount)}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('editFormGrid').insertAdjacentHTML('beforeend', totalPreview);
+    
+    // Add event listeners for auto calculation
+    const qtyInput = document.getElementById('e-qty');
+    const rateInput = document.getElementById('e-rate');
+    
+    function updateTotal() {
+        const qty = parseFloat(qtyInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
+        const total = qty * rate;
+        document.getElementById('edit-total-display').textContent = '₹' + formatNumber(total);
+    }
+    
+    qtyInput.addEventListener('input', updateTotal);
+    rateInput.addEventListener('input', updateTotal);
+    
+    document.getElementById('editModal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('editModal').classList.remove('open');
+    editId = null;
+}
+
+function saveEdit() {
+    const date = document.getElementById('e-date').value;
+    const inTime = document.getElementById('e-in-time').value;
+    const outTime = document.getElementById('e-out-time').value;
+    const pargi = document.getElementById('e-pargi').value.trim();
+    const name = document.getElementById('e-name').value.trim();
+    const qty = parseFloat(document.getElementById('e-qty').value);
+    const rate = parseFloat(document.getElementById('e-rate').value);
+    const crop = document.getElementById('e-crop').value.trim();
+    const owner = document.getElementById('e-owner').value.trim();
+    const notes = document.getElementById('e-notes').value.trim();
+    
+    if (!date || !name || !qty || !rate) {
+        showToast('Please fill all required fields!', true);
+        return;
+    }
+    
+    const updatedData = {
+        id: editId,
+        date: date,
+        in_time: inTime,
+        out_time: outTime,
+        pargi_name: pargi,
+        labour_name: name,
+        quantity: qty,
+        rupees_per_head: rate,
+        land_crop_name: crop,
+        owner_name: owner,
+        notes: notes
+    };
+    
+    fetch('/update-entry/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(updatedData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Entry updated successfully!');
+            closeModal();
+            location.reload();
+        } else {
+            showToast('Error updating entry: ' + (data.error || 'Unknown error'), true);
+        }
+    })
+    .catch(error => {
+        showToast('Error updating entry!', true);
+        console.error('Error:', error);
+    });
+}
+
+function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    
+    fetch(`/delete/${id}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Entry deleted successfully!');
+            location.reload();
+        } else {
+            showToast('Error deleting entry!', true);
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('search-text').value = '';
+    document.getElementById('filter-date').value = '';
+    document.getElementById('filter-pargi').value = '';
+    document.getElementById('filter-owner').value = '';
+    document.getElementById('filter-crop').value = '';
+    applyFilters();
+}
+
+function applyFilters() {
+    const search = document.getElementById('search-text').value.toLowerCase();
+    const date = document.getElementById('filter-date').value;
+    const pargi = document.getElementById('filter-pargi').value.toLowerCase();
+    const owner = document.getElementById('filter-owner').value.toLowerCase();
+    const crop = document.getElementById('filter-crop').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('#records-body tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let show = true;
+        const text = row.innerText.toLowerCase();
+        
+        if (search && !text.includes(search)) show = false;
+        if (date && !text.includes(date)) show = false;
+        if (pargi && !text.includes(pargi)) show = false;
+        if (owner && !text.includes(owner)) show = false;
+        if (crop && !text.includes(crop)) show = false;
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    updateTotal();
+}
+
+function updateTotal() {
+    let total = 0;
+    const rows = document.querySelectorAll('#records-body tr');
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const totalCell = row.querySelector('td:nth-child(10)');
+            if (totalCell) {
+                const value = parseFloat(totalCell.textContent.replace('₹', ''));
+                if (!isNaN(value)) total += value;
+            }
+        }
+    });
+    
+    const tfoot = document.querySelector('tfoot');
+    if (tfoot && rows.length > 0) {
+        const totalCell = tfoot.querySelector('td:nth-child(10)');
+        if (totalCell) {
+            totalCell.textContent = '₹' + formatNumber(total);
+        }
+    }
+}
+
+document.getElementById('search-text').addEventListener('input', applyFilters);
+document.getElementById('filter-date').addEventListener('change', applyFilters);
+document.getElementById('filter-pargi').addEventListener('input', applyFilters);
+document.getElementById('filter-owner').addEventListener('input', applyFilters);
+document.getElementById('filter-crop').addEventListener('input', applyFilters);
+</script>
+{% endblock %}

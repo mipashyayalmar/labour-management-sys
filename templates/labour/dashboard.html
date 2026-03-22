@@ -1,0 +1,119 @@
+{% extends 'labour/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Dashboard" %} - {% trans "Chaugule Farm" %}{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <i class="fas fa-chart-line"></i> {% trans "Dashboard" %}
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">{% trans "Today's Total" %}</div>
+        <div class="stat-value">₹{{ today_total|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">{% trans "This Month" %}</div>
+        <div class="stat-value">₹{{ month_total|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👷</div>
+        <div class="stat-label">{% trans "Total Labour" %}</div>
+        <div class="stat-value">{{ total_labour }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-label">{% trans "All Entries" %}</div>
+        <div class="stat-value">{{ total_entries }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="font-family: 'Baloo 2', cursive; font-weight: 700; color: var(--saffron-dark); margin-bottom: 0.8rem; font-size: 1rem;">
+        <i class="fas fa-history"></i> {% trans "Recent Entries" %}
+    </div>
+    <div id="recent-entries">
+        {% if recent_entries %}
+            {% for entry in recent_entries %}
+            <div class="report-row">
+                <div>
+                    <strong>{{ entry.pargi_name }}</strong> - {{ entry.labour_name }}
+                    <span class="badge">{{ entry.land_crop_name|default:'–' }}</span>
+                    <br>
+                    <small style="color: var(--muted);">
+                        {{ entry.date|date:"d M Y" }} ({{ entry.day }}) · 
+                        {{ entry.in_time|time:"H:i" }}
+                        {% if entry.out_time %} - {{ entry.out_time|time:"H:i" }}{% endif %}
+                        · {{ entry.owner_name|default:'–' }}
+                    </small>
+                </div>
+                <div style="text-align: right; font-family: 'Baloo 2', cursive; font-weight: 700; color: var(--saffron-dark);">
+                    ₹{{ entry.total_amount|floatformat:2 }}<br>
+                    <small style="color: var(--muted); font-family: 'Noto Sans', sans-serif; font-weight: 400;">
+                        {{ entry.quantity }}×₹{{ entry.rupees_per_head }}
+                    </small>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="icon">📭</div>
+                <p>{% trans "No entries yet. Add your first labour entry!" %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div style="font-family: 'Baloo 2', cursive; font-weight: 700; color: var(--saffron-dark); margin-bottom: 0.8rem; font-size: 1rem;">
+        <i class="fas fa-users"></i> {% trans "Top Pargi Groups (This Month)" %}
+    </div>
+    <div id="pargi-summary">
+        {% if pargi_summary %}
+            {% for pargi, amount in pargi_summary %}
+            <div style="margin-bottom: 0.65rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; font-size: 0.9rem;">
+                    <span>{{ pargi }}</span>
+                    <strong>₹{{ amount|floatformat:2 }}</strong>
+                </div>
+                <div style="background: var(--border); border-radius: 20px; height: 8px; overflow: hidden;">
+                    <div style="height: 100%; width: {% widthratio amount pargi_summary.0.1 100 %}%; background: linear-gradient(90deg, var(--saffron-light), var(--saffron-dark)); border-radius: 20px;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="padding: 1rem;">
+                <p>{% trans "No pargi data for this month." %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div style="font-family: 'Baloo 2', cursive; font-weight: 700; color: var(--saffron-dark); margin-bottom: 0.8rem; font-size: 1rem;">
+        <i class="fas fa-seedling"></i> {% trans "Top Crops (This Month)" %}
+    </div>
+    <div id="crop-summary">
+        {% if crop_summary %}
+            {% for crop, amount in crop_summary %}
+            <div style="margin-bottom: 0.65rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; font-size: 0.9rem;">
+                    <span>{{ crop }}</span>
+                    <strong>₹{{ amount|floatformat:2 }}</strong>
+                </div>
+                <div style="background: var(--border); border-radius: 20px; height: 8px; overflow: hidden;">
+                    <div style="height: 100%; width: {% widthratio amount crop_summary.0.1 100 %}%; background: linear-gradient(90deg, var(--saffron-light), var(--saffron-dark)); border-radius: 20px;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="padding: 1rem;">
+                <p>{% trans "No crop data for this month." %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

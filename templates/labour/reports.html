@@ -1,0 +1,121 @@
+{% extends 'labour/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Reports" %} - {% trans "Chaugule Farm" %}{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <i class="fas fa-chart-bar"></i> {% trans "Reports" %}
+</div>
+
+<div class="card">
+    <div style="display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center;">
+        <select id="report-type" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.9rem; background: var(--white); outline: none; flex: 1; min-width: 140px;">
+            <option value="daily">{% trans "Daily Report" %}</option>
+            <option value="monthly">{% trans "Monthly Report" %}</option>
+            <option value="pargi">{% trans "By Pargi" %}</option>
+            <option value="owner">{% trans "By Owner" %}</option>
+            <option value="crop">{% trans "By Crop" %}</option>
+        </select>
+        <input type="month" id="report-month" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.9rem; background: var(--white); outline: none; flex: 1; min-width: 140px;">
+        <button class="btn btn-success btn-sm" onclick="exportCSV()">
+            <i class="fas fa-download"></i> {% trans "Export CSV" %}
+        </button>
+    </div>
+    <div id="report-content">
+        <div class="empty-state">
+            <div class="icon">📊</div>
+            <p>{% trans "Select report type and month to view data" %}</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentData = null;
+
+function loadReports() {
+    const type = document.getElementById('report-type').value;
+    const month = document.getElementById('report-month').value;
+    
+    showToast('Loading reports...');
+    
+    fetch(`/api/reports/?type=${type}&month=${month}`)
+        .then(response => response.json())
+        .then(data => {
+            currentData = data;
+            renderReports(data, type);
+        })
+        .catch(error => {
+            showToast('Error loading reports!', true);
+            console.error(error);
+        });
+}
+
+function renderReports(data, type) {
+    const el = document.getElementById('report-content');
+    
+    if (!data.data || data.data.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>{% trans "No data for selected period." %}</p></div>';
+        return;
+    }
+    
+    el.innerHTML = data.data.map(group => `
+        <div class="report-section">
+            <div style="font-family: "Baloo 2", cursive; font-weight: 700; color: var(--earth); margin-bottom: 0.4rem; font-size: 1rem; border-left: 4px solid var(--saffron); padding-left: 0.75rem;">
+                📍 ${group.key}
+            </div>
+            <div style="margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--muted);">
+                ${group.quantity} labourers · Total: ₹${formatNumber(group.subtotal)}
+            </div>
+            <div style="margin-top: 0.5rem;">
+                ${group.entries.map(e => `
+                    <div class="report-row">
+                        <div>
+                            <strong>${e.name}</strong>
+                            ${type !== 'pargi' ? `<span class="badge">${e.pargi}</span>` : ''}
+                            ${type !== 'crop' ? `<span class="badge">${e.crop}</span>` : ''}
+                            <br>
+                            <small style="color: var(--muted);">
+                                📅 ${e.date} (${e.day_marathi || e.day}) · 
+                                ⏰ ${e.in_time} ${e.out_time !== '-' ? `- ${e.out_time}` : ''}
+                            </small>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-weight: 600; color: var(--saffron-dark);">₹${formatNumber(e.total)}</span>
+                            <br>
+                            <small style="color: var(--muted);">${e.quantity} × ₹${e.rate}</small>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="report-total">
+                <span>📊 ${type === 'daily' ? 'Day Total' : 'Subtotal'} · ${group.quantity} labourers</span>
+                <span>💰 ₹${formatNumber(group.subtotal)}</span>
+            </div>
+        </div>
+    `).join('') + `
+        <div style="background: linear-gradient(135deg, var(--saffron), var(--saffron-dark)); color: #fff; border-radius: 10px; padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: center; font-family: "Baloo 2", cursive; font-weight: 800; font-size: 1.1rem; margin-top: 1rem;">
+            <div>
+                <i class="fas fa-chart-line"></i> GRAND TOTAL
+                <br>
+                <small style="font-size: 0.8rem; opacity: 0.9;">${data.grand_quantity} total labourers</small>
+            </div>
+            <div style="font-size: 1.3rem;">₹${formatNumber(data.grand_total)}</div>
+        </div>
+    `;
+}
+
+function exportCSV() {
+    window.location.href = '/export/csv/';
+    showToast('Exporting CSV file...');
+}
+
+document.getElementById('report-type').addEventListener('change', loadReports);
+document.getElementById('report-month').addEventListener('change', loadReports);
+
+// Set default month
+const today = new Date();
+document.getElementById('report-month').value = today.toISOString().slice(0, 7);
+loadReports();
+</script>
+{% endblock %}

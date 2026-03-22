@@ -1,0 +1,97 @@
+{% extends 'labour/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Add Entry" %} - {% trans "Chaugule Farm" %}{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <i class="fas fa-plus-circle"></i> {% trans "Add Labour Entry" %}
+</div>
+
+<div class="card">
+    <form method="post" id="labourForm">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>📅 {% trans "Date" %} *</label>
+                {{ form.date }}
+            </div>
+            <div class="form-group">
+                <label>⏰ {% trans "In Time" %} *</label>
+                {{ form.in_time }}
+            </div>
+            <div class="form-group">
+                <label>⏰ {% trans "Out Time" %}</label>
+                {{ form.out_time }}
+            </div>
+            <div class="form-group">
+                <label>👥 {% trans "Pargi Name" %} *</label>
+                {{ form.pargi_name }}
+                <small class="text-muted">{% trans "Labour group/section name" %}</small>
+            </div>
+            <div class="form-group">
+                <label>👷 {% trans "Labour Name" %} *</label>
+                {{ form.labour_name }}
+            </div>
+            <div class="form-group">
+                <label>🔢 {% trans "Quantity" %} *</label>
+                {{ form.quantity }}
+            </div>
+            <div class="form-group">
+                <label>💵 {% trans "Rate per Head" %} *</label>
+                {{ form.rupees_per_head }}
+            </div>
+            <div class="form-group">
+                <label>📦 {% trans "Total Amount" %}</label>
+                <div class="total-preview">
+                    <div class="label">{% trans "AUTO CALCULATED" %}</div>
+                    <div class="amount" id="total-display">₹0.00</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>🌾 {% trans "Land/Crop Name" %}</label>
+                {{ form.land_crop_name }}
+            </div>
+            <div class="form-group">
+                <label>👤 {% trans "Owner Name" %}</label>
+                {{ form.owner_name }}
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>📝 {% trans "Notes" %}</label>
+                {{ form.notes }}
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> {% trans "Save Entry" %}
+            </button>
+            <button type="button" class="btn btn-outline" onclick="clearForm()">
+                <i class="fas fa-undo"></i> {% trans "Clear" %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function calculateTotal() {
+    const qty = parseFloat(document.getElementById('id_quantity').value) || 0;
+    const rate = parseFloat(document.getElementById('id_rupees_per_head').value) || 0;
+    const total = qty * rate;
+    document.getElementById('total-display').textContent = '₹' + total.toFixed(2);
+}
+
+function clearForm() {
+    document.getElementById('id_pargi_name').value = '';
+    document.getElementById('id_labour_name').value = '';
+    document.getElementById('id_quantity').value = '';
+    document.getElementById('id_rupees_per_head').value = '';
+    document.getElementById('id_land_crop_name').value = '';
+    document.getElementById('id_owner_name').value = '';
+    document.getElementById('id_notes').value = '';
+    document.getElementById('total-display').textContent = '₹0.00';
+}
+
+document.getElementById('id_quantity').addEventListener('input', calculateTotal);
+document.getElementById('id_rupees_per_head').addEventListener('input', calculateTotal);
+</script>
+{% endblock %}
